@@ -13,12 +13,16 @@ def tick args
   @vector_y ||= 0
   @flipped ||= false
 
-  @vector_x = args.inputs.mouse.x - @x
-  @vector_y = args.inputs.mouse.y - @y
+  fish_mid_x = (Constants::FISH_W * Constants::FISH_SCALE) / 2
+  fish_mid_y = (Constants::FISH_W * Constants::FISH_SCALE) / 2
+
+  @vector_x = args.inputs.mouse.x - (@x + fish_mid_x)
+  @vector_y = args.inputs.mouse.y - (@y + fish_mid_y)
 
   vector_v = Math.sqrt((@vector_x ** 2) + (@vector_y ** 2))
 
-  if vector_v.nonzero?
+  # don't divide with 0 // reduce jittering
+  if vector_v.nonzero? and vector_v > 4
     @vector_x /= vector_v
     @vector_y /= vector_v
 
@@ -35,8 +39,8 @@ def tick args
     path: "sprites/fish_light_#{frames_fish[frame]}.png",
     x: @x,
     y: @y,
-    w: Constants::FISH_W * 0.25,
-    h: Constants::FISH_H * 0.25,
+    w: Constants::FISH_W * Constants::FISH_SCALE,
+    h: Constants::FISH_H * Constants::FISH_SCALE,
     flip_horizontally: @flipped
   }
 
