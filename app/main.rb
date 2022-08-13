@@ -55,6 +55,7 @@ def show_title args
     w: 902 * 0.75,
     h: 736* 0.75,
     path: "sprites/gui/title.png" }
+
   btn_start_x = 1280 / 2 - (1037 * 0.25) / 2
   btn_start_y = 150
   btn_start_width = 1037 * 0.25
@@ -73,10 +74,10 @@ def show_title args
     h: btn_start_height,
     path: start_sprite }
 
-  btn_credits_x = 1280 / 2 - (1037 * 0.25) / 2
+  btn_credits_x = 1280 / 2 - (1037 * 0.15) / 2
   btn_credits_y = 50
-  btn_credits_width = 1037 * 0.25
-  btn_credits_height = 282 * 0.25
+  btn_credits_width = 1037 * 0.15
+  btn_credits_height = 282 * 0.15
 
   credits_hovered = args.inputs.mouse.inside_rect?({x: btn_credits_x,
                                                   y: btn_credits_y,

@@ -123,4 +123,28 @@ def show_credits args
     alignment_enum: 1,
     size_enum: Constants::FONT_SIZE_S,
     text: "GameDev Regensburg Summer Game Jam 2022"}
+
+  btn_back_x = 1280 / 2 - (1037 * 0.15) / 2
+  btn_back_y = 50
+  btn_back_width = 1037 * 0.15
+  btn_back_height = 282 * 0.15
+
+  back_hovered = args.inputs.mouse.inside_rect?({   x: btn_back_x,
+                                                    y: btn_back_y,
+                                                    w: btn_back_width,
+                                                    h: btn_back_height})
+
+  back_sprite = back_hovered ? "sprites/gui/btn_back_hover.png" : "sprites/gui/btn_back.png"
+  args.outputs.sprites << {
+    x: btn_back_x,
+    y: btn_back_y,
+    w: btn_back_width,
+    h: btn_back_height,
+    path: back_sprite }
+
+  if args.inputs.mouse.click
+    if back_hovered
+      @state = State::TITLE
+    end
+  end
 end
