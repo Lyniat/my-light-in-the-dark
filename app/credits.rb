@@ -111,7 +111,7 @@ def show_credits args
     font: Constants::FONT,
     alignment_enum: 0,
     size_enum: Constants::FONT_SIZE_M,
-    text: "Lorenz Lorenz"}
+    text: "Lorenz Heckelbacher"}
 
   args.outputs.labels << {
     x: 1280 / 2,

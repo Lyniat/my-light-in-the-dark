@@ -39,10 +39,6 @@ def tick args
     show_credits args
   end
 
-  #if args.state.tick_count == 0
-  #  @bullets << {x: 400, y: 400, dir_x: 1, dir_y: 1, speed: 0.1}
-  #end
-
 end
 
 def show_title args
