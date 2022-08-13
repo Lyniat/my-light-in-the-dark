@@ -11,6 +11,7 @@ module Constants
   FONT_SIZE_B = 10
   FONT_SIZE_M = 5
   FONT_SIZE_S = 1
+  LIVES = 5
 end
 
 module State
@@ -27,6 +28,7 @@ def tick args
   @vector_x ||= 0
   @vector_y ||= 0
   @flipped ||= false
+  @lives ||= Constants::LIVES
 
   @bullets ||= []
 
@@ -46,6 +48,7 @@ def tick args
     show_title args
   when State::GAME
     run_game args
+    show_game_gui args
   when State::CREDITS
     show_credits args
   end
@@ -215,4 +218,19 @@ def run_game args
   # output lighted scene to main canvas
   args.outputs.background_color = [0, 0, 0, 0]
   args.outputs.sprites << { x: 0, y: 0, w: 1280, h: 720, path: :lighted_scene }
+end
+
+def show_game_gui args
+  i = 0
+
+  while i < Constants::LIVES
+    args.outputs.sprites << {
+      path: "sprites/gui/light_off.png",
+      x: i * 350,
+      y: 0,
+      w: 299,
+      h: 388
+    }
+    i += 1
+  end
 end
