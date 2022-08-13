@@ -134,7 +134,7 @@ def run_game args
     vector_bullet_x /= vector_bullet_v
     vector_bullet_y /= vector_bullet_v
 
-    bullet = {x: start_x, y: start_y, dir_x: vector_bullet_x, dir_y: vector_bullet_y, speed: 2}
+    bullet = {x: start_x, y: start_y, dir_x: vector_bullet_x, dir_y: vector_bullet_y, speed: 2, angle: 0}
     @bullets << bullet
   end
 
@@ -171,7 +171,7 @@ def run_game args
   args.outputs[:scene].background_color = [117, 176, 185, 255]
 
   args.outputs[:scene].sprites << {
-    path: "sprites/test_bg.png",
+    path: "sprites/background/lvl_01.png",
     x: 0,
     y: 0,
     w: 1280,
@@ -194,6 +194,8 @@ def run_game args
     bullet[:x] += bullet[:dir_x] * bullet[:speed]
     bullet[:y] += bullet[:dir_y] * bullet[:speed]
 
+    bullet[:angle] += 1
+
     bx = bullet[:x]
     by = bullet[:y]
 
@@ -202,11 +204,12 @@ def run_game args
     end
 
     args.outputs[:scene].sprites << {
-      path: "sprites/lyniat.png",
+      path: "sprites/energy/neg_00.png",
       x: bx,
       y: by,
       w: 50,
-      h: 50
+      h: 50,
+      angle: bullet[:angle]
     }
 
     if Math.sqrt(((@x + fish_mid_x) - (bx + 25)) ** 2 + ((@y + fish_mid_y) - (by + 25)) ** 2) < 70
@@ -217,6 +220,14 @@ def run_game args
   end
 
   @bullets -= to_remove
+
+  args.outputs[:scene].sprites << {
+    path: "sprites/background/lvl_01_plants.png",
+    x: 0,
+    y: 0,
+    w: 1280,
+    h: 720
+  }
 
   args.outputs[:lighted_scene].sprites << { x: 0, y: 0, w: 1280, h: 720, path: :lights, blendmode_enum: 0 }
   args.outputs[:lighted_scene].sprites << { blendmode_enum: 2, x: 0, y: 0, w: 1280, h: 720, path: :scene }
