@@ -4,7 +4,7 @@ module Constants
   FISH_W = 556
   FISH_H = 515
   FISH_SCALE = 0.25
-  FISH_SPEED = 3
+  FISH_SPEED = 4
   LIGHT_SIZE = 800
   FLICKER_SIZE = 40
   FONT = "fonts/AveriaLibre.ttf"
@@ -21,24 +21,44 @@ module State
   CREDITS = 99
 end
 
+def reset_game args
+  @x = 1280 / 2
+  @y = 720 / 2
+  @lives = Constants::LIVES / 2
+
+  @bullets = []
+  @gems = []
+end
+
 def tick args
 
   @state ||= 0
-  @x ||= 0
-  @y ||= 0
+  @level ||= 0
   @vector_x ||= 0
   @vector_y ||= 0
   @flipped ||= false
-  @lives ||= Constants::LIVES / 2
-
-  @bullets ||= []
-  @gems ||= []
 
   if args.state.tick_count == 0
-    args.audio[:bg_music] = {
+    args.audio[:bg_music_0] = {
       input: 'music/music_01.ogg',
       x: 0.0, y: 0.0, z: 0.0,
       gain: 0.5,
+      pitch: 1.0,
+      paused: false,
+      looping: true,
+    }
+    args.audio[:bg_music_1] = {
+      input: 'music/music_02.ogg',
+      x: 0.0, y: 0.0, z: 0.0,
+      gain: 0,
+      pitch: 1.0,
+      paused: false,
+      looping: true,
+    }
+    args.audio[:bg_music_2] = {
+      input: 'music/music_03.ogg',
+      x: 0.0, y: 0.0, z: 0.0,
+      gain: 0,
       pitch: 1.0,
       paused: false,
       looping: true,
@@ -114,12 +134,19 @@ def show_title args
     end
 
     if start_hovered
+      reset_game args
       @state = State::GAME
     end
   end
 end
 
 def run_game args
+  # music
+  args.audio[:bg_music_0][:gain] = @level == 0 ? 0.5 : 0
+  args.audio[:bg_music_1][:gain] = @level == 1 ? 0.5 : 0
+  args.audio[:bg_music_2][:gain] = @level >= 2 ? 0.5 : 0
+
+
   fish_mid_x = (Constants::FISH_W * Constants::FISH_SCALE) / 2
   fish_mid_y = (Constants::FISH_H * Constants::FISH_SCALE) / 2
 
@@ -138,12 +165,12 @@ def run_game args
     vector_bullet_x /= vector_bullet_v
     vector_bullet_y /= vector_bullet_v
 
-    bullet = {x: start_x, y: start_y, dir_x: vector_bullet_x, dir_y: vector_bullet_y, speed: 2, angle: 0, type: type}
+    bullet = {x: start_x, y: start_y, dir_x: vector_bullet_x, dir_y: vector_bullet_y, speed: 1 + @level, angle: 0, type: type}
     @bullets << bullet
   end
 
   # gems
-  if args.state.tick_count % 60 == 0
+  if args.state.tick_count % 120 == 0
     start_x = rand(1280)
     start_y = rand(2) == 0 ? 720 + 190 : 0 -190
 
@@ -179,7 +206,14 @@ def run_game args
   @flipped = @vector_x < 0
 
   # render light
-  args.outputs[:lights].background_color = [0, 0, 0, 0]#[117, 176, 185, 0]
+  case @level
+  when 0
+    args.outputs[:lights].background_color = [0, 0, 0, 120]
+  when 1
+    args.outputs[:lights].background_color = [0, 0, 0, 40]
+  else
+    args.outputs[:lights].background_color = [0, 0, 0, 0]
+  end
 
   light_flicker = Math.sin(args.state.tick_count / 20) * Constants::FLICKER_SIZE
   light_flicker -= Math.sin(args.state.tick_count / 13) * (Constants::FLICKER_SIZE / 3)
@@ -208,8 +242,20 @@ def run_game args
   frames_fish = ["00", "01", "02", "03", "02", "01"]
   args.outputs[:scene].background_color = [117, 176, 185, 255]
 
+  case @level
+  when 0
+    bg_path = "sprites/background/lvl_00.png"
+    bg_fg_path = "sprites/background/lvl_00_plants.png"
+  when 1
+    bg_path = "sprites/background/lvl_01.png"
+    bg_fg_path = "sprites/background/lvl_01_plants.png"
+  else
+    bg_path = "sprites/background/lvl_01.png"
+    bg_fg_path = "sprites/background/lvl_01_plants.png"
+  end
+
   args.outputs[:scene].sprites << {
-    path: "sprites/background/lvl_01.png",
+    path: bg_path,
     x: 0,
     y: 0,
     w: 1280,
@@ -290,7 +336,7 @@ def run_game args
   @gems -= gems_to_remove
 
   args.outputs[:scene].sprites << {
-    path: "sprites/background/lvl_01_plants.png",
+    path: bg_fg_path,
     x: 0,
     y: 0,
     w: 1280,
@@ -303,6 +349,11 @@ def run_game args
   # output lighted scene to main canvas
   args.outputs.background_color = [0, 0, 0, 0]
   args.outputs.sprites << { x: 0, y: 0, w: 1280, h: 720, path: :lighted_scene }
+
+  if @lives >= Constants::LIVES
+    reset_game args
+    @level += 1
+  end
 end
 
 def show_game_gui args
