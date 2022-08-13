@@ -30,6 +30,17 @@ def tick args
 
   @bullets ||= []
 
+  if args.state.tick_count == 0
+    args.audio[:bg_music] = {
+      input: 'music/music_01.ogg',
+      x: 0.0, y: 0.0, z: 0.0,
+      gain: 0.5,
+      pitch: 1.0,
+      paused: false,
+      looping: true,
+    }
+  end
+
   case @state
   when State::TITLE
     show_title args
