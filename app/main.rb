@@ -71,7 +71,7 @@ def show_title args
     w: 902 * 0.75,
     h: 736* 0.75,
     path: "sprites/gui/title.png" }
-
+  
   btn_start_x = 1280 / 2 - (1037 * 0.25) / 2
   btn_start_y = 150
   btn_start_width = 1037 * 0.25
@@ -329,7 +329,24 @@ def show_game_gui args
       w: 299 * Constants::GUI_LIVES_SCALE,
       h: 388 * Constants::GUI_LIVES_SCALE
     }
-    i += 1
+   # i += 1
+   # if i >= 10
+    #  show_Dialog_Level2 args
+   # end
   end
+
+
+  # def show_Dialog_Level2 args
+  #   args.outputs.labels << {
+  #     x: @x,
+  #     y: @y,
+  #     r: 255,
+  #     g: 255,
+  #     b: 255,
+  #     font: Constants::FONT,
+  #     alignment_enum: 0,
+  #     size_enum: Constants::FONT_SIZE_M,
+  #     text: "Das ist ein test"}
+  # end
   
 end
