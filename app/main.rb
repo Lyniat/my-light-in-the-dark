@@ -12,6 +12,7 @@ module Constants
   FONT_SIZE_M = 5
   FONT_SIZE_S = 1
   LIVES = 5
+  GUI_LIVES_SCALE = 0.1
 end
 
 module State
@@ -210,6 +211,7 @@ def run_game args
 
     if Math.sqrt(((@x + fish_mid_x) - (bx + 25)) ** 2 + ((@y + fish_mid_y) - (by + 25)) ** 2) < 70
       to_remove << bullet
+      @lives -= 1
     end
 
   end
@@ -230,11 +232,25 @@ def show_game_gui args
   while i < Constants::LIVES
     args.outputs.sprites << {
       path: "sprites/gui/light_off.png",
-      x: i * 350,
-      y: 0,
-      w: 299,
-      h: 388
+      x: i * 299 * Constants::GUI_LIVES_SCALE + 20 + i * 20,
+      y: 720 - 388 * Constants::GUI_LIVES_SCALE - 20,
+      w: 299 * Constants::GUI_LIVES_SCALE,
+      h: 388 * Constants::GUI_LIVES_SCALE
     }
     i += 1
   end
+
+  i = 0
+
+  while i < @lives
+    args.outputs.sprites << {
+      path: "sprites/gui/light_on.png",
+      x: i * 299 * Constants::GUI_LIVES_SCALE + 20 + i * 20,
+      y: 720 - 388 * Constants::GUI_LIVES_SCALE - 20,
+      w: 299 * Constants::GUI_LIVES_SCALE,
+      h: 388 * Constants::GUI_LIVES_SCALE
+    }
+    i += 1
+  end
+  
 end
