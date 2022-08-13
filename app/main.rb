@@ -1,3 +1,5 @@
+require 'app/credits.rb'
+
 module Constants
   FISH_W = 556
   FISH_H = 515
@@ -5,10 +7,21 @@ module Constants
   FISH_SPEED = 3
   LIGHT_SIZE = 800
   FLICKER_SIZE = 40
+  FONT = "fonts/AveriaLibre.ttf"
+  FONT_SIZE_B = 10
+  FONT_SIZE_M = 5
+  FONT_SIZE_S = 1
+end
+
+module State
+  TITLE = 0
+  GAME = 1
+  CREDITS = 99
 end
 
 def tick args
 
+  @state ||= 0
   @x ||= 0
   @y ||= 0
   @vector_x ||= 0
@@ -17,10 +30,79 @@ def tick args
 
   @bullets ||= []
 
+  case @state
+  when State::TITLE
+    show_title args
+  when State::GAME
+    run_game args
+  when State::CREDITS
+    show_credits args
+  end
+
   #if args.state.tick_count == 0
   #  @bullets << {x: 400, y: 400, dir_x: 1, dir_y: 1, speed: 0.1}
   #end
 
+end
+
+def show_title args
+  args.outputs.sprites << {
+    path: "sprites/test_bg.png",
+    x: 0,
+    y: 0,
+    w: 1280,
+    h: 720
+  }
+  args.outputs.sprites << {
+    x: 230,
+    y: 150,
+    w: 902 * 0.75,
+    h: 736* 0.75,
+    path: "sprites/gui/title.png" }
+  btn_start_x = 1280 / 2 - (1037 * 0.25) / 2
+  btn_start_y = 150
+  btn_start_width = 1037 * 0.25
+  btn_start_height = 282 * 0.25
+
+  start_hovered = args.inputs.mouse.inside_rect?({x: btn_start_x,
+                                                   y: btn_start_y,
+                                                   w: btn_start_width,
+                                                   h: btn_start_height})
+
+  start_sprite = start_hovered ? "sprites/gui/btn_start_hover.png" : "sprites/gui/btn_start.png"
+  args.outputs.sprites << {
+    x: btn_start_x,
+    y: btn_start_y,
+    w: btn_start_width,
+    h: btn_start_height,
+    path: start_sprite }
+
+  btn_credits_x = 1280 / 2 - (1037 * 0.25) / 2
+  btn_credits_y = 50
+  btn_credits_width = 1037 * 0.25
+  btn_credits_height = 282 * 0.25
+
+  credits_hovered = args.inputs.mouse.inside_rect?({x: btn_credits_x,
+                                                  y: btn_credits_y,
+                                                  w: btn_credits_width,
+                                                  h: btn_credits_height})
+
+  credits_sprite = credits_hovered ? "sprites/gui/btn_credits_hover.png" : "sprites/gui/btn_credits.png"
+  args.outputs.sprites << {
+    x: btn_credits_x,
+    y: btn_credits_y,
+    w: btn_credits_width,
+    h: btn_credits_height,
+    path: credits_sprite }
+
+  if args.inputs.mouse.click
+    if credits_hovered
+      @state = State::CREDITS
+    end
+  end
+end
+
+def run_game args
   fish_mid_x = (Constants::FISH_W * Constants::FISH_SCALE) / 2
   fish_mid_y = (Constants::FISH_H * Constants::FISH_SCALE) / 2
 
@@ -125,5 +207,4 @@ def tick args
   # output lighted scene to main canvas
   args.outputs.background_color = [0, 0, 0, 0]
   args.outputs.sprites << { x: 0, y: 0, w: 1280, h: 720, path: :lighted_scene }
-
 end
