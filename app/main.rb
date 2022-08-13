@@ -32,6 +32,7 @@ def tick args
   @lives ||= Constants::LIVES
 
   @bullets ||= []
+  @gems ||= []
 
   if args.state.tick_count == 0
     args.audio[:bg_music] = {
@@ -122,6 +123,7 @@ def run_game args
   fish_mid_x = (Constants::FISH_W * Constants::FISH_SCALE) / 2
   fish_mid_y = (Constants::FISH_H * Constants::FISH_SCALE) / 2
 
+  # bullets
   if args.state.tick_count % 20 == 0
     start_x = rand(1280)
     start_y = rand(2) == 0 ? 720 + 190 : 0 -190
@@ -140,6 +142,26 @@ def run_game args
     @bullets << bullet
   end
 
+  # gems
+  if args.state.tick_count % 60 == 0
+    start_x = rand(1280)
+    start_y = rand(2) == 0 ? 720 + 190 : 0 -190
+
+    type = rand(2) == 0 ? "00" : "01"
+
+    vector_bullet_x = (@x + fish_mid_x) - start_y
+    vector_bullet_y = (@y + fish_mid_y) - start_y
+
+    vector_bullet_v = Math.sqrt((vector_bullet_x ** 2) + (vector_bullet_y ** 2))
+
+    vector_bullet_x /= vector_bullet_v
+    vector_bullet_y /= vector_bullet_v
+
+    gem = {x: start_x, y: start_y, dir_x: vector_bullet_x, dir_y: vector_bullet_y, speed: 3, angle: 0, type: type}
+    @gems << gem
+  end
+
+  # player
   @vector_x = args.inputs.mouse.x - (@x + fish_mid_x)
   @vector_y = args.inputs.mouse.y - (@y + fish_mid_y)
 
@@ -168,6 +190,20 @@ def run_game args
                                      h: Constants::LIGHT_SIZE + light_flicker,
                                      path: "sprites/mask.png" }
 
+  @gems.each do |gem|
+    bx = gem[:x]
+    by = gem[:y]
+
+    light_flicker = Math.sin(args.state.tick_count / 20) * Constants::FLICKER_SIZE
+    args.outputs[:lights].sprites << {
+      path: "sprites/mask.png",
+      x: bx - 75 - light_flicker / 2,
+      y: by - 75 -  light_flicker / 2,
+      w: 200 + light_flicker,
+      h: 200 + light_flicker,
+    }
+  end
+
 
   frames_fish = ["00", "01", "02", "03", "02", "01"]
   args.outputs[:scene].background_color = [117, 176, 185, 255]
@@ -190,7 +226,8 @@ def run_game args
     flip_horizontally: @flipped
   }
 
-  to_remove = []
+  bullets_to_remove = []
+  gems_to_remove = []
 
   @bullets.each do |bullet|
     bullet[:x] += bullet[:dir_x] * bullet[:speed]
@@ -202,7 +239,7 @@ def run_game args
     by = bullet[:y]
 
     if bx < -200 or bx > 1280 + 200 or by < -200 or by > 720 + 200
-      to_remove << bullet
+      bullets_to_remove << bullet
     end
 
     args.outputs[:scene].sprites << {
@@ -215,13 +252,42 @@ def run_game args
     }
 
     if Math.sqrt(((@x + fish_mid_x) - (bx + 25)) ** 2 + ((@y + fish_mid_y) - (by + 25)) ** 2) < 70
-      to_remove << bullet
+      bullets_to_remove << bullet
       @lives -= 1
     end
 
   end
 
-  @bullets -= to_remove
+  @gems.each do |gem|
+    gem[:angle] += 1
+
+    bx = gem[:x]
+    by = gem[:y]
+
+    if bx < -200 or bx > 1280 + 200 or by < -200 or by > 720 + 200
+      gems_to_remove << gem
+    end
+
+    args.outputs[:scene].sprites << {
+      path: "sprites/energy/pos_#{gem[:type]}.png",
+      x: bx,
+      y: by,
+      w: 50,
+      h: 50,
+      angle: gem[:angle]
+    }
+
+    if Math.sqrt(((@x + fish_mid_x) - (bx + 25)) ** 2 + ((@y + fish_mid_y) - (by + 25)) ** 2) < 70
+      gems_to_remove << gem
+      @lives += 1
+    end
+
+    gem[:x] += gem[:dir_x] * gem[:speed]
+    gem[:y] += gem[:dir_y] * gem[:speed]
+  end
+
+  @bullets -= bullets_to_remove
+  @gems -= gems_to_remove
 
   args.outputs[:scene].sprites << {
     path: "sprites/background/lvl_01_plants.png",
