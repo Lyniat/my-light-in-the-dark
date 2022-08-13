@@ -110,6 +110,10 @@ def show_title args
     if credits_hovered
       @state = State::CREDITS
     end
+
+    if start_hovered
+      @state = State::GAME
+    end
   end
 end
 
