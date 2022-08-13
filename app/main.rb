@@ -11,7 +11,7 @@ module Constants
   FONT_SIZE_B = 10
   FONT_SIZE_M = 5
   FONT_SIZE_S = 1
-  LIVES = 5
+  LIVES = 10
   GUI_LIVES_SCALE = 0.1
 end
 
@@ -29,7 +29,7 @@ def tick args
   @vector_x ||= 0
   @vector_y ||= 0
   @flipped ||= false
-  @lives ||= Constants::LIVES
+  @lives ||= Constants::LIVES / 2
 
   @bullets ||= []
 
