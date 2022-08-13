@@ -126,6 +126,8 @@ def run_game args
     start_x = rand(1280)
     start_y = rand(2) == 0 ? 720 + 190 : 0 -190
 
+    type = rand(2) == 0 ? "00" : "01"
+
     vector_bullet_x = (@x + fish_mid_x) - start_y
     vector_bullet_y = (@y + fish_mid_y) - start_y
 
@@ -134,7 +136,7 @@ def run_game args
     vector_bullet_x /= vector_bullet_v
     vector_bullet_y /= vector_bullet_v
 
-    bullet = {x: start_x, y: start_y, dir_x: vector_bullet_x, dir_y: vector_bullet_y, speed: 2, angle: 0}
+    bullet = {x: start_x, y: start_y, dir_x: vector_bullet_x, dir_y: vector_bullet_y, speed: 2, angle: 0, type: type}
     @bullets << bullet
   end
 
@@ -204,7 +206,7 @@ def run_game args
     end
 
     args.outputs[:scene].sprites << {
-      path: "sprites/energy/neg_00.png",
+      path: "sprites/energy/neg_#{bullet[:type]}.png",
       x: bx,
       y: by,
       w: 50,
