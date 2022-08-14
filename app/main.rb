@@ -302,8 +302,6 @@ def run_game args
     }
   end
 
-
-  #frames_fish = ["00", "01", "02", "03", "02", "01"]
   frames_fish = [
     "sprites/fish_light_00.png",
     "sprites/fish_light_01.png",
@@ -534,7 +532,12 @@ def show_dialog args
 
   if args.inputs.mouse.click
     if continue_hovered
-      @state = State::GAME
+      if @level < 3
+        @state = State::GAME
+      else
+        @level = 0
+        @state = State::TITLE
+      end
       args.outputs.sounds << 'sounds/click.wav'
     end
   end
