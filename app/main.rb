@@ -13,6 +13,7 @@ module Constants
   FONT_SIZE_S = 1
   LIVES = 10
   GUI_LIVES_SCALE = 0.1
+  ANIMATION_TIME = 2 * 60
 end
 
 module State
@@ -29,6 +30,12 @@ module LevelState
   DIALOG = 2
 end
 
+module Animation
+  LIGHT = 0
+  EATING = 1
+  SAD = 2
+end
+
 def reset_game args
   @x = 1280 / 2
   @y = 720 / 2
@@ -36,6 +43,8 @@ def reset_game args
 
   @bullets = []
   @gems = []
+  @animation_state = Animation::LIGHT
+  @animation_timer = 0
 end
 
 def tick args
@@ -45,6 +54,8 @@ def tick args
   @vector_x ||= 0
   @vector_y ||= 0
   @flipped ||= false
+  @animation_state ||= Animation::LIGHT
+  @animation_timer ||= 0
 
   if args.state.tick_count == 0
     args.audio[:bg_music_0] = {
@@ -72,6 +83,11 @@ def tick args
       looping: true,
     }
   end
+
+  # music
+  args.audio[:bg_music_0][:gain] = @level == 0 ? 0.5 : 0
+  args.audio[:bg_music_1][:gain] = @level == 1 ? 0.5 : 0
+  args.audio[:bg_music_2][:gain] = @level >= 2 ? 0.5 : 0
 
   case @state
   when State::TITLE
@@ -154,11 +170,11 @@ def show_title args
 end
 
 def run_game args
-  # music
-  args.audio[:bg_music_0][:gain] = @level == 0 ? 0.5 : 0
-  args.audio[:bg_music_1][:gain] = @level == 1 ? 0.5 : 0
-  args.audio[:bg_music_2][:gain] = @level >= 2 ? 0.5 : 0
-
+  @animation_timer -= 1
+  if @animation_timer <= 0
+    @animation_timer = 0
+    @animation_state = Animation::LIGHT
+  end
 
   fish_mid_x = (Constants::FISH_W * Constants::FISH_SCALE) / 2
   fish_mid_y = (Constants::FISH_H * Constants::FISH_SCALE) / 2
@@ -252,7 +268,31 @@ def run_game args
   end
 
 
-  frames_fish = ["00", "01", "02", "03", "02", "01"]
+  #frames_fish = ["00", "01", "02", "03", "02", "01"]
+  frames_fish = [
+    "sprites/fish_light_00.png",
+    "sprites/fish_light_01.png",
+    "sprites/fish_light_02.png",
+    "sprites/fish_light_03.png",
+    "sprites/fish_light_02.png",
+    "sprites/fish_light_01.png",
+  ]
+  frames_fish_sad = [
+    "sprites/fish_sad_00.png",
+    "sprites/fish_sad_01.png",
+    "sprites/fish_sad_02.png",
+    "sprites/fish_sad_03.png",
+    "sprites/fish_sad_02.png",
+    "sprites/fish_sad_01.png",
+  ]
+  frames_fish_eating = [
+    "sprites/fish_light_00.png",
+    "sprites/fish_eating_00.png",
+    "sprites/fish_eating_01.png",
+    "sprites/fish_eating_02.png",
+    "sprites/fish_eating_01.png",
+    "sprites/fish_eating_00.png",
+  ]
   args.outputs[:scene].background_color = [117, 176, 185, 255]
 
   case @level
@@ -275,9 +315,18 @@ def run_game args
     h: 720
   }
 
+  case @animation_state
+  when Animation::SAD
+    animation_array = frames_fish_sad
+  when Animation::EATING
+    animation_array = frames_fish_eating
+  else
+    animation_array = frames_fish
+  end
+
   frame = (args.state.tick_count / 20).floor % 6
   args.outputs[:scene].sprites << {
-    path: "sprites/fish_light_#{frames_fish[frame]}.png",
+    path: animation_array[frame],
     x: @x,
     y: @y,
     w: Constants::FISH_W * Constants::FISH_SCALE,
@@ -313,6 +362,8 @@ def run_game args
     if Math.sqrt(((@x + fish_mid_x) - (bx + 25)) ** 2 + ((@y + fish_mid_y) - (by + 25)) ** 2) < 70
       bullets_to_remove << bullet
       @lives -= 1
+      @animation_state = Animation::SAD
+      @animation_timer = Constants::ANIMATION_TIME
     end
 
   end
@@ -339,6 +390,8 @@ def run_game args
     if Math.sqrt(((@x + fish_mid_x) - (bx + 25)) ** 2 + ((@y + fish_mid_y) - (by + 25)) ** 2) < 70
       gems_to_remove << gem
       @lives += 1
+      @animation_state = Animation::EATING
+      @animation_timer = Constants::ANIMATION_TIME
     end
 
     gem[:x] += gem[:dir_x] * gem[:speed]
