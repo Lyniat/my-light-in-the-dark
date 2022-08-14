@@ -250,8 +250,8 @@ def run_game args
     bg_path = "sprites/background/lvl_01.png"
     bg_fg_path = "sprites/background/lvl_01_plants.png"
   else
-    bg_path = "sprites/background/lvl_01.png"
-    bg_fg_path = "sprites/background/lvl_01_plants.png"
+    bg_path = "sprites/background/lvl_02.png"
+    bg_fg_path = "sprites/background/lvl_02_plants.png"
   end
 
   args.outputs[:scene].sprites << {
