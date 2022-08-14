@@ -159,12 +159,13 @@ def show_title args
   if args.inputs.mouse.click
     if credits_hovered
       @state = State::CREDITS
+      args.outputs.sounds << 'sounds/click.wav'
     end
 
     if start_hovered
       reset_game args
-      #@state = State::GAME
       @state = State::DIALOG
+      args.outputs.sounds << 'sounds/click.wav'
     end
   end
 end
@@ -364,6 +365,7 @@ def run_game args
       @lives -= 1
       @animation_state = Animation::SAD
       @animation_timer = Constants::ANIMATION_TIME
+      args.outputs.sounds << 'sounds/hurt.wav'
     end
 
   end
@@ -392,6 +394,7 @@ def run_game args
       @lives += 1
       @animation_state = Animation::EATING
       @animation_timer = Constants::ANIMATION_TIME
+      args.outputs.sounds << 'sounds/eat.wav'
     end
 
     gem[:x] += gem[:dir_x] * gem[:speed]
@@ -498,6 +501,7 @@ def show_dialog args
   if args.inputs.mouse.click
     if continue_hovered
       @state = State::GAME
+      args.outputs.sounds << 'sounds/click.wav'
     end
   end
 end
@@ -534,6 +538,7 @@ def show_game_over args
       reset_game args
       @state = State::TITLE
       @level = 0
+      args.outputs.sounds << 'sounds/click.wav'
     end
   end
 end
