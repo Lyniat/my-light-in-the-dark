@@ -1,11 +1,13 @@
 require 'app/credits.rb'
+require 'app/arcade.rb'
 
 module Constants
   FISH_W = 556
   FISH_H = 515
   FISH_SCALE = 0.25
   FISH_SPEED = 4
-  LIGHT_SIZE = 800
+  FISH_SPEED_ARCADE = 7
+  LIGHT_SIZE = 1000
   FLICKER_SIZE = 40
   FONT = "fonts/AveriaLibre.ttf"
   FONT_SIZE_B = 10
@@ -21,6 +23,7 @@ module State
   GAME = 1
   DIALOG = 2
   GAME_OVER = 3
+  ARCADE = 4
   CREDITS = 99
 end
 
@@ -45,6 +48,8 @@ def reset_game args
   @gems = []
   @animation_state = Animation::LIGHT
   @animation_timer = 0
+  @arcade_time = 0
+  @arcade_points = 0
 end
 
 def tick args
@@ -56,6 +61,7 @@ def tick args
   @flipped ||= false
   @animation_state ||= Animation::LIGHT
   @animation_timer ||= 0
+  @last_score ||= 0
 
   if args.state.tick_count == 0
     args.audio[:bg_music_0] = {
@@ -99,6 +105,8 @@ def tick args
     show_credits args
   when State::DIALOG
     show_dialog args
+  when State::ARCADE
+    run_arcade args
   when State::GAME_OVER
     show_game_over args
   end
@@ -138,15 +146,33 @@ def show_title args
     h: btn_start_height,
     path: start_sprite }
 
+  btn_arcade_x = 1280 / 2 - (1037 * 0.15) / 2
+  btn_arcade_y = 80
+  btn_arcade_width = 1037 * 0.15
+  btn_arcade_height = 282 * 0.15
+
+  arcade_hovered = args.inputs.mouse.inside_rect?({x: btn_arcade_x,
+                                                  y: btn_arcade_y,
+                                                  w: btn_arcade_width,
+                                                  h: btn_arcade_height})
+
+  arcade_sprite = arcade_hovered ? "sprites/gui/btn_arcade_hover.png" : "sprites/gui/btn_arcade.png"
+  args.outputs.sprites << {
+    x: btn_arcade_x,
+    y: btn_arcade_y,
+    w: btn_arcade_width,
+    h: btn_arcade_height,
+    path: arcade_sprite }
+
   btn_credits_x = 1280 / 2 - (1037 * 0.15) / 2
-  btn_credits_y = 50
+  btn_credits_y = 10
   btn_credits_width = 1037 * 0.15
   btn_credits_height = 282 * 0.15
 
   credits_hovered = args.inputs.mouse.inside_rect?({x: btn_credits_x,
-                                                  y: btn_credits_y,
-                                                  w: btn_credits_width,
-                                                  h: btn_credits_height})
+                                                    y: btn_credits_y,
+                                                    w: btn_credits_width,
+                                                    h: btn_credits_height})
 
   credits_sprite = credits_hovered ? "sprites/gui/btn_credits_hover.png" : "sprites/gui/btn_credits.png"
   args.outputs.sprites << {
@@ -164,7 +190,15 @@ def show_title args
 
     if start_hovered
       reset_game args
+      @last_score = 0
       @state = State::DIALOG
+      args.outputs.sounds << 'sounds/click.wav'
+    end
+
+    if arcade_hovered
+      reset_game args
+      @last_score = 0
+      @state = State::ARCADE
       args.outputs.sounds << 'sounds/click.wav'
     end
   end
@@ -458,7 +492,6 @@ def show_game_gui args
     }
     i += 1
   end
-
 end
 
 def show_dialog args
@@ -533,6 +566,19 @@ def show_game_over args
     w: btn_start_width,
     h: btn_start_height,
     path: continue_sprite }
+
+  if @last_score > 0
+    args.outputs.labels << {
+      x: 1280 / 2,
+      y: 220,
+      r: 255,
+      g: 255,
+      b: 255,
+      font: Constants::FONT,
+      alignment_enum: 1,
+      size_enum: Constants::FONT_SIZE_B,
+      text: "Your score: #{@last_score}"}
+  end
 
   if args.inputs.mouse.click
     if continue_hovered
