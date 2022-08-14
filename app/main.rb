@@ -428,6 +428,7 @@ def run_game args
   if @lives <= 0
     reset_game args
     @state = State::GAME_OVER
+    args.outputs.sounds << 'sounds/bubbles.wav'
   end
 end
 
@@ -490,7 +491,7 @@ def show_dialog args
                                                     w: btn_start_width,
                                                     h: btn_start_height})
 
-  continue_sprite = continue_hovered ? "sprites/gui/btn_credits_hover.png" : "sprites/gui/btn_credits.png"
+  continue_sprite = continue_hovered ? "sprites/gui/btn_continue_hover.png" : "sprites/gui/btn_continue.png"
   args.outputs.sprites << {
     x: btn_start_x,
     y: btn_start_y,
