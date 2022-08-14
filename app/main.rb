@@ -18,7 +18,15 @@ end
 module State
   TITLE = 0
   GAME = 1
+  DIALOG = 2
+  GAME_OVER = 3
   CREDITS = 99
+end
+
+module LevelState
+  BLENDING = 0
+  GAME = 1
+  DIALOG = 2
 end
 
 def reset_game args
@@ -73,6 +81,10 @@ def tick args
     show_game_gui args
   when State::CREDITS
     show_credits args
+  when State::DIALOG
+    show_dialog args
+  when State::GAME_OVER
+    show_game_over args
   end
 
 end
@@ -135,7 +147,8 @@ def show_title args
 
     if start_hovered
       reset_game args
-      @state = State::GAME
+      #@state = State::GAME
+      @state = State::DIALOG
     end
   end
 end
@@ -353,6 +366,12 @@ def run_game args
   if @lives >= Constants::LIVES
     reset_game args
     @level += 1
+    @state = State::DIALOG
+  end
+
+  if @lives <= 0
+    reset_game args
+    @state = State::GAME_OVER
   end
 end
 
@@ -382,5 +401,86 @@ def show_game_gui args
     }
     i += 1
   end
-  
+
+end
+
+def show_dialog args
+  case @level
+  when 0
+    bg_path = "sprites/dialog/dialog_0.png"
+  when 1
+    bg_path = "sprites/dialog/dialog_1.png"
+  when 2
+    bg_path = "sprites/dialog/dialog_2.png"
+  else
+    bg_path = "sprites/dialog/dialog_3.png"
+  end
+
+  args.outputs.sprites << {
+    path: bg_path,
+    x: 0,
+    y: 0,
+    w: 1280,
+    h: 720
+  }
+
+  btn_start_x = 1280 / 2 - (1037 * 0.25) / 2
+  btn_start_y = 50
+  btn_start_width = 1037 * 0.25
+  btn_start_height = 282 * 0.25
+
+  continue_hovered = args.inputs.mouse.inside_rect?({x: btn_start_x,
+                                                    y: btn_start_y,
+                                                    w: btn_start_width,
+                                                    h: btn_start_height})
+
+  continue_sprite = continue_hovered ? "sprites/gui/btn_credits_hover.png" : "sprites/gui/btn_credits.png"
+  args.outputs.sprites << {
+    x: btn_start_x,
+    y: btn_start_y,
+    w: btn_start_width,
+    h: btn_start_height,
+    path: continue_sprite }
+
+  if args.inputs.mouse.click
+    if continue_hovered
+      @state = State::GAME
+    end
+  end
+end
+
+def show_game_over args
+  args.outputs.sprites << {
+    path: "sprites/gui/game_over.png",
+    x: 0,
+    y: 0,
+    w: 1280,
+    h: 720
+  }
+
+  btn_start_x = 1280 / 2 - (1037 * 0.25) / 2
+  btn_start_y = 50
+  btn_start_width = 1037 * 0.25
+  btn_start_height = 282 * 0.25
+
+  continue_hovered = args.inputs.mouse.inside_rect?({x: btn_start_x,
+                                                     y: btn_start_y,
+                                                     w: btn_start_width,
+                                                     h: btn_start_height})
+
+  continue_sprite = continue_hovered ? "sprites/gui/btn_retry_hover.png" : "sprites/gui/btn_retry.png"
+  args.outputs.sprites << {
+    x: btn_start_x,
+    y: btn_start_y,
+    w: btn_start_width,
+    h: btn_start_height,
+    path: continue_sprite }
+
+  if args.inputs.mouse.click
+    if continue_hovered
+      reset_game args
+      @state = State::TITLE
+      @level = 0
+    end
+  end
 end
