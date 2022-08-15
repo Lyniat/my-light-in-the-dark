@@ -1,11 +1,13 @@
 require 'app/credits.rb'
+require 'app/arcade.rb'
 
 module Constants
   FISH_W = 556
   FISH_H = 515
   FISH_SCALE = 0.25
-  FISH_SPEED = 3
-  LIGHT_SIZE = 800
+  FISH_SPEED = 4
+  FISH_SPEED_ARCADE = 7
+  LIGHT_SIZE = 1000
   FLICKER_SIZE = 40
   FONT = "fonts/AveriaLibre.ttf"
   FONT_SIZE_B = 10
@@ -13,29 +15,56 @@ module Constants
   FONT_SIZE_S = 1
   LIVES = 10
   GUI_LIVES_SCALE = 0.1
+  ANIMATION_TIME = 2 * 60
 end
 
 module State
   TITLE = 0
   GAME = 1
+  DIALOG = 2
+  GAME_OVER = 3
+  ARCADE = 4
   CREDITS = 99
+end
+
+module LevelState
+  BLENDING = 0
+  GAME = 1
+  DIALOG = 2
+end
+
+module Animation
+  LIGHT = 0
+  EATING = 1
+  SAD = 2
+end
+
+def reset_game args
+  @x = 1280 / 2
+  @y = 720 / 2
+  @lives = Constants::LIVES / 2
+
+  @bullets = []
+  @gems = []
+  @animation_state = Animation::LIGHT
+  @animation_timer = 0
+  @arcade_time = 0
+  @arcade_points = 0
 end
 
 def tick args
 
   @state ||= 0
-  @x ||= 0
-  @y ||= 0
+  @level ||= 0
   @vector_x ||= 0
   @vector_y ||= 0
   @flipped ||= false
-  @lives ||= Constants::LIVES / 2
-
-  @bullets ||= []
-  @gems ||= []
+  @animation_state ||= Animation::LIGHT
+  @animation_timer ||= 0
+  @last_score ||= 0
 
   if args.state.tick_count == 0
-    args.audio[:bg_music] = {
+    args.audio[:bg_music_0] = {
       input: 'music/music_01.ogg',
       x: 0.0, y: 0.0, z: 0.0,
       gain: 0.5,
@@ -43,7 +72,28 @@ def tick args
       paused: false,
       looping: true,
     }
+    args.audio[:bg_music_1] = {
+      input: 'music/music_02.ogg',
+      x: 0.0, y: 0.0, z: 0.0,
+      gain: 0,
+      pitch: 1.0,
+      paused: false,
+      looping: true,
+    }
+    args.audio[:bg_music_2] = {
+      input: 'music/music_03.ogg',
+      x: 0.0, y: 0.0, z: 0.0,
+      gain: 0,
+      pitch: 1.0,
+      paused: false,
+      looping: true,
+    }
   end
+
+  # music
+  args.audio[:bg_music_0][:gain] = @level == 0 ? 0.5 : 0
+  args.audio[:bg_music_1][:gain] = @level == 1 ? 0.5 : 0
+  args.audio[:bg_music_2][:gain] = @level >= 2 ? 0.5 : 0
 
   case @state
   when State::TITLE
@@ -53,6 +103,12 @@ def tick args
     show_game_gui args
   when State::CREDITS
     show_credits args
+  when State::DIALOG
+    show_dialog args
+  when State::ARCADE
+    run_arcade args
+  when State::GAME_OVER
+    show_game_over args
   end
 
 end
@@ -71,7 +127,7 @@ def show_title args
     w: 902 * 0.75,
     h: 736* 0.75,
     path: "sprites/gui/title.png" }
-  
+
   btn_start_x = 1280 / 2 - (1037 * 0.25) / 2
   btn_start_y = 150
   btn_start_width = 1037 * 0.25
@@ -90,15 +146,33 @@ def show_title args
     h: btn_start_height,
     path: start_sprite }
 
+  btn_arcade_x = 1280 / 2 - (1037 * 0.15) / 2
+  btn_arcade_y = 80
+  btn_arcade_width = 1037 * 0.15
+  btn_arcade_height = 282 * 0.15
+
+  arcade_hovered = args.inputs.mouse.inside_rect?({x: btn_arcade_x,
+                                                  y: btn_arcade_y,
+                                                  w: btn_arcade_width,
+                                                  h: btn_arcade_height})
+
+  arcade_sprite = arcade_hovered ? "sprites/gui/btn_arcade_hover.png" : "sprites/gui/btn_arcade.png"
+  args.outputs.sprites << {
+    x: btn_arcade_x,
+    y: btn_arcade_y,
+    w: btn_arcade_width,
+    h: btn_arcade_height,
+    path: arcade_sprite }
+
   btn_credits_x = 1280 / 2 - (1037 * 0.15) / 2
-  btn_credits_y = 50
+  btn_credits_y = 10
   btn_credits_width = 1037 * 0.15
   btn_credits_height = 282 * 0.15
 
   credits_hovered = args.inputs.mouse.inside_rect?({x: btn_credits_x,
-                                                  y: btn_credits_y,
-                                                  w: btn_credits_width,
-                                                  h: btn_credits_height})
+                                                    y: btn_credits_y,
+                                                    w: btn_credits_width,
+                                                    h: btn_credits_height})
 
   credits_sprite = credits_hovered ? "sprites/gui/btn_credits_hover.png" : "sprites/gui/btn_credits.png"
   args.outputs.sprites << {
@@ -111,15 +185,32 @@ def show_title args
   if args.inputs.mouse.click
     if credits_hovered
       @state = State::CREDITS
+      args.outputs.sounds << 'sounds/click.wav'
     end
 
     if start_hovered
-      @state = State::GAME
+      reset_game args
+      @last_score = 0
+      @state = State::DIALOG
+      args.outputs.sounds << 'sounds/click.wav'
+    end
+
+    if arcade_hovered
+      reset_game args
+      @last_score = 0
+      @state = State::ARCADE
+      args.outputs.sounds << 'sounds/click.wav'
     end
   end
 end
 
 def run_game args
+  @animation_timer -= 1
+  if @animation_timer <= 0
+    @animation_timer = 0
+    @animation_state = Animation::LIGHT
+  end
+
   fish_mid_x = (Constants::FISH_W * Constants::FISH_SCALE) / 2
   fish_mid_y = (Constants::FISH_H * Constants::FISH_SCALE) / 2
 
@@ -138,12 +229,12 @@ def run_game args
     vector_bullet_x /= vector_bullet_v
     vector_bullet_y /= vector_bullet_v
 
-    bullet = {x: start_x, y: start_y, dir_x: vector_bullet_x, dir_y: vector_bullet_y, speed: 2, angle: 0, type: type}
+    bullet = {x: start_x, y: start_y, dir_x: vector_bullet_x, dir_y: vector_bullet_y, speed: 1 + @level, angle: 0, type: type}
     @bullets << bullet
   end
 
   # gems
-  if args.state.tick_count % 60 == 0
+  if args.state.tick_count % 120 == 0
     start_x = rand(1280)
     start_y = rand(2) == 0 ? 720 + 190 : 0 -190
 
@@ -179,7 +270,14 @@ def run_game args
   @flipped = @vector_x < 0
 
   # render light
-  args.outputs[:lights].background_color = [0, 0, 0, 0]#[117, 176, 185, 0]
+  case @level
+  when 0
+    args.outputs[:lights].background_color = [0, 0, 0, 120]
+  when 1
+    args.outputs[:lights].background_color = [0, 0, 0, 40]
+  else
+    args.outputs[:lights].background_color = [0, 0, 0, 0]
+  end
 
   light_flicker = Math.sin(args.state.tick_count / 20) * Constants::FLICKER_SIZE
   light_flicker -= Math.sin(args.state.tick_count / 13) * (Constants::FLICKER_SIZE / 3)
@@ -204,21 +302,64 @@ def run_game args
     }
   end
 
-
-  frames_fish = ["00", "01", "02", "03", "02", "01"]
+  frames_fish = [
+    "sprites/fish_light_00.png",
+    "sprites/fish_light_01.png",
+    "sprites/fish_light_02.png",
+    "sprites/fish_light_03.png",
+    "sprites/fish_light_02.png",
+    "sprites/fish_light_01.png",
+  ]
+  frames_fish_sad = [
+    "sprites/fish_sad_00.png",
+    "sprites/fish_sad_01.png",
+    "sprites/fish_sad_02.png",
+    "sprites/fish_sad_03.png",
+    "sprites/fish_sad_02.png",
+    "sprites/fish_sad_01.png",
+  ]
+  frames_fish_eating = [
+    "sprites/fish_light_00.png",
+    "sprites/fish_eating_00.png",
+    "sprites/fish_eating_01.png",
+    "sprites/fish_eating_02.png",
+    "sprites/fish_eating_01.png",
+    "sprites/fish_eating_00.png",
+  ]
   args.outputs[:scene].background_color = [117, 176, 185, 255]
 
+  case @level
+  when 0
+    bg_path = "sprites/background/lvl_00.png"
+    bg_fg_path = "sprites/background/lvl_00_plants.png"
+  when 1
+    bg_path = "sprites/background/lvl_01.png"
+    bg_fg_path = "sprites/background/lvl_01_plants.png"
+  else
+    bg_path = "sprites/background/lvl_02.png"
+    bg_fg_path = "sprites/background/lvl_02_plants.png"
+  end
+
   args.outputs[:scene].sprites << {
-    path: "sprites/background/lvl_01.png",
+    path: bg_path,
     x: 0,
     y: 0,
     w: 1280,
     h: 720
   }
 
+  case @animation_state
+  when Animation::SAD
+    animation_array = frames_fish_sad
+  when Animation::EATING
+    animation_array = frames_fish_eating
+  else
+    animation_array = frames_fish
+  end
+
   frame = (args.state.tick_count / 20).floor % 6
   args.outputs[:scene].sprites << {
-    path: "sprites/fish_light_#{frames_fish[frame]}.png",
+    path: animation_array[frame],
     x: @x,
     y: @y,
     w: Constants::FISH_W * Constants::FISH_SCALE,
@@ -254,6 +395,9 @@ def run_game args
     if Math.sqrt(((@x + fish_mid_x) - (bx + 25)) ** 2 + ((@y + fish_mid_y) - (by + 25)) ** 2) < 70
       bullets_to_remove << bullet
       @lives -= 1
+      @animation_state = Animation::SAD
+      @animation_timer = Constants::ANIMATION_TIME
+      args.outputs.sounds << 'sounds/hurt.wav'
     end
 
   end
@@ -280,6 +424,9 @@ def run_game args
     if Math.sqrt(((@x + fish_mid_x) - (bx + 25)) ** 2 + ((@y + fish_mid_y) - (by + 25)) ** 2) < 70
       gems_to_remove << gem
       @lives += 1
+      @animation_state = Animation::EATING
+      @animation_timer = Constants::ANIMATION_TIME
+      args.outputs.sounds << 'sounds/eat.wav'
     end
 
     gem[:x] += gem[:dir_x] * gem[:speed]
@@ -290,7 +437,7 @@ def run_game args
   @gems -= gems_to_remove
 
   args.outputs[:scene].sprites << {
-    path: "sprites/background/lvl_01_plants.png",
+    path: bg_fg_path,
     x: 0,
     y: 0,
     w: 1280,
@@ -303,6 +450,18 @@ def run_game args
   # output lighted scene to main canvas
   args.outputs.background_color = [0, 0, 0, 0]
   args.outputs.sprites << { x: 0, y: 0, w: 1280, h: 720, path: :lighted_scene }
+
+  if @lives >= Constants::LIVES
+    reset_game args
+    @level += 1
+    @state = State::DIALOG
+  end
+
+  if @lives <= 0
+    reset_game args
+    @state = State::GAME_OVER
+    args.outputs.sounds << 'sounds/bubbles.wav'
+  end
 end
 
 def show_game_gui args
@@ -334,19 +493,105 @@ def show_game_gui args
     #  show_Dialog_Level2 args
    # end
   end
+end
 
+def show_dialog args
+  case @level
+  when 0
+    bg_path = "sprites/dialog/dialog_0.png"
+  when 1
+    bg_path = "sprites/dialog/dialog_1.png"
+  when 2
+    bg_path = "sprites/dialog/dialog_2.png"
+  else
+    bg_path = "sprites/dialog/dialog_3.png"
+  end
 
-  # def show_Dialog_Level2 args
-  #   args.outputs.labels << {
-  #     x: @x,
-  #     y: @y,
-  #     r: 255,
-  #     g: 255,
-  #     b: 255,
-  #     font: Constants::FONT,
-  #     alignment_enum: 0,
-  #     size_enum: Constants::FONT_SIZE_M,
-  #     text: "Das ist ein test"}
-  # end
-  
+  args.outputs.sprites << {
+    path: bg_path,
+    x: 0,
+    y: 0,
+    w: 1280,
+    h: 720
+  }
+
+  btn_start_x = 1280 / 2 - (1037 * 0.25) / 2
+  btn_start_y = 50
+  btn_start_width = 1037 * 0.25
+  btn_start_height = 282 * 0.25
+
+  continue_hovered = args.inputs.mouse.inside_rect?({x: btn_start_x,
+                                                    y: btn_start_y,
+                                                    w: btn_start_width,
+                                                    h: btn_start_height})
+
+  continue_sprite = continue_hovered ? "sprites/gui/btn_continue_hover.png" : "sprites/gui/btn_continue.png"
+  args.outputs.sprites << {
+    x: btn_start_x,
+    y: btn_start_y,
+    w: btn_start_width,
+    h: btn_start_height,
+    path: continue_sprite }
+
+  if args.inputs.mouse.click
+    if continue_hovered
+      if @level < 3
+        @state = State::GAME
+      else
+        @level = 0
+        @state = State::TITLE
+      end
+      args.outputs.sounds << 'sounds/click.wav'
+    end
+  end
+end
+
+def show_game_over args
+  args.outputs.sprites << {
+    path: "sprites/gui/game_over.png",
+    x: 0,
+    y: 0,
+    w: 1280,
+    h: 720
+  }
+
+  btn_start_x = 1280 / 2 - (1037 * 0.25) / 2
+  btn_start_y = 50
+  btn_start_width = 1037 * 0.25
+  btn_start_height = 282 * 0.25
+
+  continue_hovered = args.inputs.mouse.inside_rect?({x: btn_start_x,
+                                                     y: btn_start_y,
+                                                     w: btn_start_width,
+                                                     h: btn_start_height})
+
+  continue_sprite = continue_hovered ? "sprites/gui/btn_retry_hover.png" : "sprites/gui/btn_retry.png"
+  args.outputs.sprites << {
+    x: btn_start_x,
+    y: btn_start_y,
+    w: btn_start_width,
+    h: btn_start_height,
+    path: continue_sprite }
+
+  if @last_score > 0
+    args.outputs.labels << {
+      x: 1280 / 2,
+      y: 220,
+      r: 255,
+      g: 255,
+      b: 255,
+      font: Constants::FONT,
+      alignment_enum: 1,
+      size_enum: Constants::FONT_SIZE_B,
+      text: "Your score: #{@last_score}"}
+  end
+
+  if args.inputs.mouse.click
+    if continue_hovered
+      reset_game args
+      @state = State::TITLE
+      @level = 0
+      args.outputs.sounds << 'sounds/click.wav'
+    end
+  end
 end

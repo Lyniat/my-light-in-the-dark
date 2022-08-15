@@ -145,6 +145,7 @@ def show_credits args
   if args.inputs.mouse.click
     if back_hovered
       @state = State::TITLE
+      args.outputs.sounds << 'sounds/click.wav'
     end
   end
 end
