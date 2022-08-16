@@ -100,7 +100,7 @@ def show_credits args
     font: Constants::FONT,
     alignment_enum: 0,
     size_enum: Constants::FONT_SIZE_S,
-    text: "Music/Sounds"}
+    text: "Music"}
 
   args.outputs.labels << {
     x: start_names_right_x,

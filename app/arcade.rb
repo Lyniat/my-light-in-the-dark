@@ -11,7 +11,15 @@ def run_arcade args
   fish_mid_y = (Constants::FISH_H * Constants::FISH_SCALE) / 2
 
   # bullets
-  if args.state.tick_count % 40 == 0
+  mod = 4000 - @arcade_time
+  if mod < 20
+    mod = 20
+  end
+
+  if mod > 120
+    mod = 120
+  end
+  if args.state.tick_count % mod == 0
     start_x = rand(1280)
     start_y = rand(2) == 0 ? 720 + 190 : 0 -190
 
@@ -171,9 +179,9 @@ def run_arcade args
 
   @bullets.each do |bullet|
     time = bullet[:time]
-    speed = @arcade_time / 600
-    if speed > 5
-      speed = 5
+    speed = @arcade_time / 2400
+    if speed > 3
+      speed = 3
     end
     bullet[:x] += Math.sin(time / 60) * 2
     bullet[:y] += Math.cos(time / 60) * 2
