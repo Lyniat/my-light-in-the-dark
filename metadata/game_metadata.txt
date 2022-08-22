@@ -2,7 +2,7 @@ devid=lyniat
 devtitle=lyniat
 gameid=my-light-in-the-dark
 gametitle=My Light in the Dark
-version=0.1
+version=1.0
 icon=metadata/icon.png
 
 # Uncomment the entry below to bytecode compile your Ruby code (Pro License Only)
