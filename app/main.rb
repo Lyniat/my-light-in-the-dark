@@ -63,6 +63,11 @@ def tick args
   @animation_timer ||= 0
   @last_score ||= 0
 
+  # 08-08-2024 added for performance improvements
+  args.outputs[:lights].transient!
+  args.outputs[:scene].transient!
+  args.outputs[:lighted_scene].transient!
+
   if args.state.tick_count == 0
     args.audio[:bg_music_0] = {
       input: 'music/music_01.ogg',

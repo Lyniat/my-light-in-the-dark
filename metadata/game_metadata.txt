@@ -10,3 +10,9 @@ compile_ruby=true
 
 # Uncomment the entry below to specify the package name for your APK (Pro License Only)
 #packageid=org.dev.gamename
+
+# 08-08-2024
+# Added for improved rendering quality
+scale_quality=2
+hd=true
+highdpi=true
